@@ -38,3 +38,14 @@ graph TD
     ```
 
 uvicorn main:app --reload
+
+
+Example Prompts to Try:
+
+List all stops for Path-1
+Show me all routes that use Tech-Loop
+Assign vehicle KA-01-7890 and driver Sunita to the Path Path - 00:02 trip (This should work, as the trip is unassigned)
+Create a new stop called Metro Station with latitude 12.99 and longitude 77.60
+Create a new path called Metro-Link using stops [Peenya, Temple, Metro Station]
+What vehicle is on the Bulk - 00:01 trip?
+(High-Impact Test) Deactivate the Tech-Loop - 19:45 route (This should trigger a consequence check, though we haven't defined one for it yet. The router will still catch it.)

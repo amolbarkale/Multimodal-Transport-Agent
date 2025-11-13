@@ -4,16 +4,27 @@ import { MoviChat } from "@/components/movi/MoviChat";
 import { MoviFloatingButton } from "@/components/movi/MoviFloatingButton";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useLocation } from "react-router-dom"; // <-- Import useLocation
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  currentPage?: string;
 }
 
-function DashboardContent({ children, currentPage = "dashboard" }: DashboardLayoutProps) {
+// Helper function to get a clean page name from the URL
+const getPageNameFromPath = (pathname: string): string => {
+  const lastSegment = pathname.split('/').pop() || 'dashboard';
+  // Example: 'bus-dashboard' -> 'busDashboard'
+  return lastSegment.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+};
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebarCollapse();
   const [moviOpen, setMoviOpen] = useState(false);
   
+  // Get the current location from the router
+  const location = useLocation();
+  const currentPage = getPageNameFromPath(location.pathname);
+
   return (
     <>
       <TopNav />
@@ -28,17 +39,17 @@ function DashboardContent({ children, currentPage = "dashboard" }: DashboardLayo
       <MoviChat
         isOpen={moviOpen}
         onClose={() => setMoviOpen(false)}
-        currentPage={currentPage}
+        currentPage={currentPage} // <-- Pass the dynamic page name
       />
     </>
   );
 }
 
-export function DashboardLayout({ children, currentPage }: DashboardLayoutProps) {
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <DashboardContent currentPage={currentPage}>{children}</DashboardContent>
+      <DashboardContent>{children}</DashboardContent>
     </div>
   );
 }

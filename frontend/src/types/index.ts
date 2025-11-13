@@ -124,3 +124,14 @@ export interface DeploymentCreate {
   vehicle_id: number;
   driver_id: number;
 }
+
+export interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface Message {
+  role: "user" | "assistant";
+  content: string;
+  image?: string | null; // This line is crucial
+}
