@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, DateTime, Enum
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, DateTime, Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship, declarative_base
 import enum
 
@@ -10,48 +10,49 @@ class StatusEnum(enum.Enum):
 
 class Stop(Base):
     __tablename__ = 'stops'
-    id = Column(Integer, primary_key=True)
+    stop_id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
     latitude = Column(Float)
     longitude = Column(Float)
 
 class Path(Base):
     __tablename__ = 'paths'
-    id = Column(Integer, primary_key=True)
+    path_id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
-    # Stored as a comma-separated string of stop IDs in order
     ordered_stop_ids = Column(String, nullable=False)
 
 class Route(Base):
     __tablename__ = 'routes'
-    id = Column(Integer, primary_key=True)
-    path_id = Column(Integer, ForeignKey('paths.id'))
+    route_id = Column(Integer, primary_key=True)
+    # --- CORRECTED FOREIGN KEY ---
+    path_id = Column(Integer, ForeignKey('paths.path_id'))
     display_name = Column(String, nullable=False)
-    shift_time = Column(String, nullable=False) # e.g., "19:45"
-    direction = Column(String) # e.g., "UP" or "DOWN"
+    shift_time = Column(String, nullable=False)
+    direction = Column(String)
     start_point = Column(String)
     end_point = Column(String)
-    status = Column(Enum(StatusEnum), default=StatusEnum.active)
+    status = Column(SQLAlchemyEnum(StatusEnum), default=StatusEnum.active)
     path = relationship("Path")
 
 class Vehicle(Base):
     __tablename__ = 'vehicles'
-    id = Column(Integer, primary_key=True)
+    vehicle_id = Column(Integer, primary_key=True)
     license_plate = Column(String, unique=True, nullable=False)
-    type = Column(String) # "Bus", "Cab"
+    type = Column(String)
     capacity = Column(Integer)
 
 class Driver(Base):
     __tablename__ = 'drivers'
-    id = Column(Integer, primary_key=True)
+    driver_id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     phone_number = Column(String, unique=True)
 
 class DailyTrip(Base):
     __tablename__ = 'daily_trips'
-    id = Column(Integer, primary_key=True)
-    route_id = Column(Integer, ForeignKey('routes.id'))
-    display_name = Column(String, nullable=False) # e.g., "Bulk - 00:01"
+    trip_id = Column(Integer, primary_key=True)
+    # --- CORRECTED FOREIGN KEY ---
+    route_id = Column(Integer, ForeignKey('routes.route_id'))
+    display_name = Column(String, nullable=False)
     trip_date = Column(DateTime)
     booking_status_percentage = Column(Integer, default=0)
     live_status = Column(String, default="NOT_STARTED")
@@ -59,10 +60,11 @@ class DailyTrip(Base):
 
 class Deployment(Base):
     __tablename__ = 'deployments'
-    id = Column(Integer, primary_key=True)
-    trip_id = Column(Integer, ForeignKey('daily_trips.id'), unique=True) # A trip has one deployment
-    vehicle_id = Column(Integer, ForeignKey('vehicles.id'))
-    driver_id = Column(Integer, ForeignKey('drivers.id'))
+    deployment_id = Column(Integer, primary_key=True)
+    # --- CORRECTED FOREIGN KEYS ---
+    trip_id = Column(Integer, ForeignKey('daily_trips.trip_id'), unique=True)
+    vehicle_id = Column(Integer, ForeignKey('vehicles.vehicle_id'))
+    driver_id = Column(Integer, ForeignKey('drivers.driver_id'))
     trip = relationship("DailyTrip")
     vehicle = relationship("Vehicle")
     driver = relationship("Driver")

@@ -1,10 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+from sqlalchemy.orm import Session
 
 from agent.graph import create_movi_agent_graph
 from langchain_core.messages import HumanMessage, AIMessage
+
+import schemas
+import database.models as models
+from database.connection import get_db
 
 app = FastAPI()
 
@@ -25,12 +30,11 @@ class Message(BaseModel):
 class AgentRequest(BaseModel):
     messages: List[Message]
     currentPage: Optional[str] = "unknown"
+    image: Optional[str] = None
 
 # --- Agent Initialization ---
-# We create a single, reusable instance of our agent graph.
 movi_agent = create_movi_agent_graph()
 
-# --- API Endpoint ---
 @app.post("/invoke_agent")
 async def invoke_agent(request: AgentRequest):
     """
@@ -49,6 +53,7 @@ async def invoke_agent(request: AgentRequest):
     inputs = {
         "messages": langchain_messages,
         "currentPage": request.currentPage,
+        "image": request.image,
     }
 
     # Invoke the graph to get the final state.
@@ -59,11 +64,47 @@ async def invoke_agent(request: AgentRequest):
 
     return {"role": "assistant", "content": ai_response.content}
 
+@app.get("/trips", response_model=List[schemas.DailyTrip])
+def get_all_trips(db: Session = Depends(get_db)):
+    trips = db.query(models.DailyTrip).order_by(models.DailyTrip.trip_id.desc()).all()
+    return trips
 
-@app.get("/")
-def read_root():
-    return {"message": "Movi Agent Backend is running."}
+@app.get("/routes", response_model=List[schemas.Route])
+def get_all_routes(db: Session = Depends(get_db)):
+    routes = db.query(models.Route).all()
+    return routes
 
-@app.get("/health")
-def read_root():
-    return {"message": "Movi Agent server is healthy."}
+@app.get("/vehicles", response_model=List[schemas.Vehicle])
+def get_all_vehicles(db: Session = Depends(get_db)):
+    vehicles = db.query(models.Vehicle).all()
+    return vehicles
+
+@app.get("/drivers", response_model=List[schemas.Driver])
+def get_all_drivers(db: Session = Depends(get_db)):
+    drivers = db.query(models.Driver).all()
+    return drivers
+
+@app.get("/trip-details/{trip_id}/route-stops", response_model=List[schemas.Stop])
+def get_trip_route_stops(trip_id: int, db: Session = Depends(get_db)):
+
+    trip = db.query(models.DailyTrip).filter(models.DailyTrip.trip_id == trip_id).first()
+    if not trip:
+        return []
+    
+    route = db.query(models.Route).filter(models.Route.route_id == trip.route_id).first()
+    if not route:
+        return []
+    
+    path = db.query(models.Path).filter(models.Path.path_id == route.path_id).first()
+    if not path:
+        return []
+    
+    stop_ids = [int(sid) for sid in path.ordered_stop_ids.split(',')]
+    
+    stops = db.query(models.Stop).filter(models.Stop.stop_id.in_(stop_ids)).all()
+
+    stop_map = {stop.stop_id: stop for stop in stops}
+    ordered_stops = [stop_map[sid] for sid in stop_ids if sid in stop_map]
+    
+    return ordered_stops
+    

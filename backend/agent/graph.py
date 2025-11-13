@@ -1,24 +1,34 @@
 import os
 from typing import TypedDict, Annotated, List, Optional
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolNode # <-- The correct, modern import
+from langgraph.prebuilt import ToolNode
 from dotenv import load_dotenv
 
-from .tools import get_unassigned_vehicles, get_trip_status, remove_vehicle_from_trip, check_trip_consequences
+from .tools import (
+    get_unassigned_vehicles, get_trip_status, remove_vehicle_from_trip, 
+    check_trip_consequences, list_stops_for_path, find_routes_for_path,
+    assign_vehicle_to_trip, create_new_stop, create_new_path,
+    update_route_status, get_deployment_details,
+    check_route_deactivation_consequences, create_new_trip
+)
 from database.connection import SessionLocal
 
 # --- 1. Load Environment Variables ---
 load_dotenv()
 
 # --- 2. Define Tools ---
-tools = [get_unassigned_vehicles, get_trip_status, remove_vehicle_from_trip]
-# We create a ToolNode, which will automatically execute tools and return the results
+tools = [
+    get_unassigned_vehicles, get_trip_status, remove_vehicle_from_trip,
+    list_stops_for_path, find_routes_for_path, assign_vehicle_to_trip,
+    create_new_stop, create_new_path, update_route_status, get_deployment_details, create_new_trip
+]
+
 tool_node = ToolNode(tools)
 
 # Define the set of tools that require a consequence check before execution
-HIGH_IMPACT_TOOLS = {"remove_vehicle_from_trip"}
+HIGH_IMPACT_TOOLS = {"remove_vehicle_from_trip", "update_route_status"}
 
 # --- 3. Define Agent State ---
 class AgentState(TypedDict):
@@ -27,19 +37,57 @@ class AgentState(TypedDict):
     # tool_calls is the key LangGraph uses to pass tool invocations to the ToolNode
     tool_calls: Optional[list] = None
     consequence_info: Optional[str] = None
+    image: Optional[str] = None
 
 # --- 4. Define Graph Nodes ---
 
 def call_model(state: AgentState):
-    """The primary node that calls the LLM. It decides whether to respond or use a tool."""
+    """
+    The primary node that calls the LLM. It dynamically handles
+    text-only or multimodal (text + image) inputs.
+    """
     print("---CALLING MODEL---")
+    
+    system_prompt = (
+        "You are 'Movi', an AI assistant for transport managers. You are helpful, expert, and concise. "
+        "Your primary goal is to accurately call tools based on the user's request. "
+        "CRITICAL INSTRUCTION: When identifying entities like trips, routes, or paths, "
+        "you MUST use the exact, full name provided by the system or the user. Do not abbreviate or infer names. "
+        "ADDITIONAL INSTRUCTION: If an image is provided, it is the primary context. "
+        "Use the visual information in the image to identify what the user is referring to. "
+        "For example, if the user says 'this trip' and there's an arrow in the image pointing to a row "
+        "with the text 'Bulk - 00:01', you must identify the trip name as 'Bulk - 00:01'."
+    )
+    
+    # Check if an image was provided in the state
+    if state.get("image"):
+        print("---HANDLING MULTIMODAL INPUT---")
+        # Get the last human message for its text content
+        last_human_message = ""
+        for msg in reversed(state["messages"]):
+            if isinstance(msg, HumanMessage):
+                last_human_message = msg.content
+                break
+        
+        # Construct the multimodal message content
+        multimodal_content = [
+            {"type": "text", "text": last_human_message},
+            {"type": "image_url", "image_url": {"url": state["image"]}}
+        ]
+        
+        # Create a new message history for this call
+        # We replace the last human message with our new multimodal one
+        messages_for_llm = [SystemMessage(content=system_prompt)] + state["messages"][:-1] + [HumanMessage(content=multimodal_content)]
+    else:
+        # Standard text-only flow
+        messages_for_llm = [SystemMessage(content=system_prompt)] + state["messages"]
+
     model = ChatOpenAI(model="gpt-4o", temperature=0, streaming=True)
     model_with_tools = model.bind_tools(tools)
-
-    response = model_with_tools.invoke(state["messages"])
-    # We return the AI's response and any tool calls it made
+    
+    response = model_with_tools.invoke(messages_for_llm)
+    
     return {"messages": [response], "tool_calls": response.tool_calls}
-
 def check_consequences(state: AgentState):
     """
     The 'Tribal Knowledge' node. It checks for negative consequences
@@ -47,7 +95,6 @@ def check_consequences(state: AgentState):
     """
     print("---CHECKING CONSEQUENCES---")
     if not state.get("tool_calls"):
-        # This should not happen if routed correctly, but as a safeguard
         return {}
         
     tool_call = state["tool_calls"][-1]
@@ -56,8 +103,13 @@ def check_consequences(state: AgentState):
 
     db = SessionLocal()
     consequence_result = {}
+    
     if tool_name == "remove_vehicle_from_trip":
         consequence_result = check_trip_consequences(tool_args["trip_display_name"], db)
+    
+    elif tool_name == "update_route_status" and tool_args.get("new_status") == "deactivated":
+        consequence_result = check_route_deactivation_consequences(tool_args["route_display_name"], db)
+
     db.close()
 
     if consequence_result.get("has_consequences"):
