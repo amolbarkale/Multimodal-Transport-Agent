@@ -137,3 +137,37 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-md);
   }
 }
+
+/* Leaflet map z-index fixes */
+.leaflet-container {
+  z-index: 1 !important;
+}
+
+.leaflet-pane {
+  z-index: auto !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 10 !important;
+}
+
+.leaflet-control {
+  z-index: 10 !important;
+}
+
+/* Ensure map doesn't overflow its container */
+.leaflet-container {
+  position: relative !important;
+}
+
+/* Hide scrollbar but keep scrolling functionality */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+}

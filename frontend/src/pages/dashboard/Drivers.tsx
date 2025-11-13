@@ -2,55 +2,139 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, MoreVertical, Phone } from "lucide-react";
+import { Edit, MoreVertical, Phone, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CreateDriverModal } from "@/components/modals/CreateDriverModal";
+import { useToast } from "@/hooks/use-toast";
+import type { DriverCreate, Driver } from "@/types";
 
-const drivers = [
-  { id: "D001", name: "Amit Kumar", phone: "+91 98765 43210", license: "DL-12345", status: "Active", assignment: "Bulk - 00:01" },
-  { id: "D002", name: "Rajesh Sharma", phone: "+91 98765 43211", license: "DL-12346", status: "Active", assignment: "Not assigned" },
-  { id: "D003", name: "Priya Singh", phone: "+91 98765 43212", license: "DL-12347", status: "Active", assignment: "Path1 - 20:00" },
-  { id: "D004", name: "Vikram Patel", phone: "+91 98765 43213", license: "DL-12348", status: "Inactive", assignment: "Not assigned" },
-  { id: "D005", name: "Sneha Reddy", phone: "+91 98765 43214", license: "DL-12349", status: "Active", assignment: "Not assigned" },
-  { id: "D006", name: "Arjun Verma", phone: "+91 98765 43215", license: "DL-12350", status: "Active", assignment: "Path2 - 19:45" },
-  { id: "D007", name: "Kavita Nair", phone: "+91 98765 43216", license: "DL-12351", status: "Active", assignment: "Not assigned" },
-  { id: "D008", name: "Rohit Desai", phone: "+91 98765 43217", license: "DL-12352", status: "Active", assignment: "Not assigned" },
-];
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Drivers() {
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
+
+  const fetchDrivers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/drivers/all`);
+      if (!response.ok) throw new Error("Failed to fetch drivers");
+      const data = await response.json();
+      setDrivers(data);
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load drivers",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateDriver = async (data: DriverCreate) => {
+    try {
+      const response = await fetch(`${API_URL}/drivers/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Failed to create driver");
+      }
+
+      const newDriver = await response.json();
+      setDrivers([...drivers, newDriver]);
+      toast({
+        title: "Driver added successfully!",
+        description: `${data.name} has been added to your team.`,
+      });
+      setCreateModalOpen(false);
+    } catch (error: any) {
+      console.error("Error creating driver:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create driver",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredDrivers = drivers.filter((driver) =>
+    driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    driver.phone_number.includes(searchTerm)
+  );
+
   return (
-    <DashboardLayout>
+    <>
+      <DashboardLayout>
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Driver Management</h1>
             <p className="text-muted-foreground">Manage driver profiles and assignments</p>
           </div>
-          <Button className="bg-primary hover:bg-primary-dark">+ Add Driver</Button>
+          <Button 
+            className="bg-primary hover:bg-primary-dark gap-2"
+            onClick={() => setCreateModalOpen(true)}
+          >
+            <Plus className="w-4 h-4" />
+            Add Driver
+          </Button>
         </div>
 
         <div className="flex items-center gap-3">
-          <Input placeholder="Search drivers..." className="max-w-xs" />
-          <Button variant="outline">Filters</Button>
+          <Input 
+            placeholder="Search drivers..." 
+            className="max-w-xs" 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
       {/* Table View */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
-        <Table>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading drivers...</p>
+            </div>
+          </div>
+        ) : filteredDrivers.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Phone className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No drivers found</p>
+            </div>
+          </div>
+        ) : (
+          <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="font-semibold">Driver ID</TableHead>
               <TableHead className="font-semibold">Name</TableHead>
               <TableHead className="font-semibold">Phone Number</TableHead>
-              <TableHead className="font-semibold">License Number</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold">Current Assignment</TableHead>
               <TableHead className="font-semibold">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {drivers.map((driver) => (
-              <TableRow key={driver.id} className="hover:bg-muted/30 transition-fast">
-                <TableCell className="font-mono text-sm">{driver.id}</TableCell>
+            {filteredDrivers.map((driver) => (
+              <TableRow key={driver.driver_id} className="hover:bg-muted/30 transition-fast">
+                <TableCell className="font-mono text-sm">#{driver.driver_id}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
@@ -62,27 +146,8 @@ export default function Drivers() {
                 <TableCell>
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="w-4 h-4 text-muted-foreground" />
-                    {driver.phone}
+                    {driver.phone_number}
                   </div>
-                </TableCell>
-                <TableCell className="font-mono text-sm">{driver.license}</TableCell>
-                <TableCell>
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                      driver.status === "Active"
-                        ? "bg-success/10 text-success"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {driver.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  {driver.assignment === "Not assigned" ? (
-                    <span className="text-sm text-muted-foreground">{driver.assignment}</span>
-                  ) : (
-                    <span className="text-sm font-semibold text-primary">{driver.assignment}</span>
-                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
@@ -98,7 +163,15 @@ export default function Drivers() {
             ))}
           </TableBody>
         </Table>
+        )}
       </div>
-    </DashboardLayout>
+      </DashboardLayout>
+
+      <CreateDriverModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onSubmit={handleCreateDriver}
+      />
+    </>
   );
 }

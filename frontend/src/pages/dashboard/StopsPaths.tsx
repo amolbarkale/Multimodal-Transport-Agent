@@ -2,78 +2,200 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { MapPin, Edit, Trash2, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { MapPin, Edit, Trash2, ArrowRight, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { CreateStopModal } from "@/components/modals/CreateStopModal";
 import { CreatePathModal } from "@/components/modals/CreatePathModal";
 import { DeleteConfirmDialog } from "@/components/modals/DeleteConfirmDialog";
 import { useToast } from "@/hooks/use-toast";
+import { Stop, Path, StopCreate, PathCreate } from "@/types";
 
-const stops = [
-  { name: "Gavipuram", lat: "12.9352° N", lng: "77.5931° E", routes: 8 },
-  { name: "Temple", lat: "12.9375° N", lng: "77.5945° E", routes: 4 },
-  { name: "Peenya", lat: "13.0318° N", lng: "77.5165° E", routes: 5 },
-  { name: "BTM", lat: "12.9165° N", lng: "77.6101° E", routes: 2 },
-  { name: "Hongsandra", lat: "12.9702° N", lng: "77.7499° E", routes: 1 },
-  { name: "NoShow", lat: "12.9165° N", lng: "77.6101° E", routes: 2 },
-];
-
-const paths = [
-  { name: "Path1", stops: ["Gavipuram", "Temple"], routes: 4 },
-  { name: "Path2", stops: ["Gavipuram", "Peenya"], routes: 4 },
-  { name: "paradise", stops: ["BTM", "NoShow"], routes: 1 },
-  { name: "Dice", stops: ["BTM", "NoShow"], routes: 1 },
-];
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function StopsPaths() {
-  const [stopsList, setStopsList] = useState(stops);
-  const [pathsList, setPathsList] = useState(paths);
+  const [stopsList, setStopsList] = useState<Stop[]>([]);
+  const [pathsList, setPathsList] = useState<Path[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stopModalOpen, setStopModalOpen] = useState(false);
   const [pathModalOpen, setPathModalOpen] = useState(false);
-  const [editingStop, setEditingStop] = useState<any>(null);
-  const [editingPath, setEditingPath] = useState<any>(null);
+  const [editingStop, setEditingStop] = useState<Stop | null>(null);
+  const [editingPath, setEditingPath] = useState<Path | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteType, setDeleteType] = useState<"stop" | "path">("stop");
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  const handleCreateStop = (data: any) => {
-    setStopsList([...stopsList, { ...data, routes: 0 }]);
-    toast({ title: "Stop created successfully!" });
-  };
+  // Fetch stops and paths on mount
+  useEffect(() => {
+    fetchStops();
+    fetchPaths();
+  }, []);
 
-  const handleEditStop = (data: any) => {
-    setStopsList(stopsList.map((s, i) => i === editingStop.index ? { ...s, ...data } : s));
-    setEditingStop(null);
-    toast({ title: "Stop updated successfully!" });
-  };
-
-  const handleCreatePath = (data: any) => {
-    setPathsList([...pathsList, { ...data, routes: 0 }]);
-    toast({ title: "Path created successfully!" });
-  };
-
-  const handleEditPath = (data: any) => {
-    setPathsList(pathsList.map((p, i) => i === editingPath.index ? { ...p, ...data } : p));
-    setEditingPath(null);
-    toast({ title: "Path updated successfully!" });
-  };
-
-  const handleDelete = () => {
-    if (deleteType === "stop") {
-      setStopsList(stopsList.filter((_, i) => i !== deletingId));
-      toast({ title: "Stop deleted successfully!" });
-    } else {
-      setPathsList(pathsList.filter((_, i) => i !== deletingId));
-      toast({ title: "Path deleted successfully!" });
+  const fetchStops = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/stops/all`);
+      if (!response.ok) throw new Error("Failed to fetch stops");
+      const data = await response.json();
+      setStopsList(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load stops",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    setDeleteDialogOpen(false);
-    setDeletingId(null);
   };
+
+  const fetchPaths = async () => {
+    try {
+      const response = await fetch(`${API_URL}/paths/all`);
+      if (!response.ok) throw new Error("Failed to fetch paths");
+      const data = await response.json();
+      setPathsList(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load paths",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateStop = async (data: StopCreate) => {
+    try {
+      const response = await fetch(`${API_URL}/stops/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to create stop");
+      const newStop = await response.json();
+      setStopsList([...stopsList, newStop]);
+      toast({ title: "Stop created successfully!" });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create stop",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditStop = async (data: StopCreate) => {
+    if (!editingStop) return;
+    try {
+      const response = await fetch(`${API_URL}/stops/${editingStop.stop_id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to update stop");
+      const updatedStop = await response.json();
+      setStopsList(stopsList.map((s) => s.stop_id === editingStop.stop_id ? updatedStop : s));
+      setEditingStop(null);
+      toast({ title: "Stop updated successfully!" });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update stop",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreatePath = async (data: PathCreate) => {
+    try {
+      const response = await fetch(`${API_URL}/paths/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to create path");
+      const newPath = await response.json();
+      setPathsList([...pathsList, newPath]);
+      toast({ title: "Path created successfully!" });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create path",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditPath = async (data: PathCreate) => {
+    if (!editingPath) return;
+    try {
+      const response = await fetch(`${API_URL}/paths/${editingPath.path_id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to update path");
+      const updatedPath = await response.json();
+      setPathsList(pathsList.map((p) => p.path_id === editingPath.path_id ? updatedPath : p));
+      setEditingPath(null);
+      toast({ title: "Path updated successfully!" });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update path",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      if (deleteType === "stop") {
+        const response = await fetch(`${API_URL}/stops/${deletingId}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) throw new Error("Failed to delete stop");
+        setStopsList(stopsList.filter((s) => s.stop_id !== deletingId));
+        toast({ title: "Stop deleted successfully!" });
+      } else {
+        const response = await fetch(`${API_URL}/paths/${deletingId}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) throw new Error("Failed to delete path");
+        setPathsList(pathsList.filter((p) => p.path_id !== deletingId));
+        toast({ title: "Path deleted successfully!" });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to delete ${deleteType}`,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setDeletingId(null);
+    }
+  };
+
+  // Filter stops based on search
+  const filteredStops = stopsList.filter((stop) =>
+    stop.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <>
-    <DashboardLayout>
+    <DashboardLayout currentPage="stopsPaths">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground mb-2">Stops & Paths</h1>
         <p className="text-muted-foreground">Manage stop locations and path configurations</p>
@@ -90,47 +212,55 @@ export default function StopsPaths() {
               </Button>
             </div>
 
-            <Input placeholder="Search stops" className="mb-4" />
+            <Input 
+              placeholder="Search stops" 
+              className="mb-4" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
 
-            <div className="space-y-3">
-              {stopsList.map((stop, index) => (
-                <Card
-                  key={index}
-                  className="p-4 hover:shadow-card-hover transition-smooth cursor-pointer group"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-foreground mb-1">{stop.name}</h4>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <MapPin className="w-3 h-3" />
-                        <span>{stop.lat}, {stop.lng}</span>
+            {filteredStops.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {searchTerm ? "No stops found matching your search" : "No stops available. Add one to get started!"}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredStops.map((stop) => (
+                  <Card
+                    key={stop.stop_id}
+                    className="p-4 hover:shadow-card-hover transition-smooth cursor-pointer group"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground mb-1">{stop.name}</h4>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <MapPin className="w-3 h-3" />
+                          <span>{stop.latitude.toFixed(4)}° N, {stop.longitude.toFixed(4)}° E</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-fast">
+                        <button 
+                          className="p-1 hover:bg-muted rounded"
+                          onClick={() => setEditingStop(stop)}
+                        >
+                          <Edit className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                        <button 
+                          className="p-1 hover:bg-muted rounded"
+                          onClick={() => {
+                            setDeleteType("stop");
+                            setDeletingId(stop.stop_id);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-fast">
-                      <button 
-                        className="p-1 hover:bg-muted rounded"
-                        onClick={() => setEditingStop({ ...stop, index })}
-                      >
-                        <Edit className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                      <button 
-                        className="p-1 hover:bg-muted rounded"
-                        onClick={() => {
-                          setDeleteType("stop");
-                          setDeletingId(index);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </button>
-                    </div>
-                  </div>
-                  <span className="inline-block px-2 py-1 bg-primary/10 text-primary text-xs rounded">
-                    {stop.routes} routes
-                  </span>
-                </Card>
-              ))}
-            </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
 
@@ -144,53 +274,62 @@ export default function StopsPaths() {
               </Button>
             </div>
 
-            <div className="space-y-4">
-              {pathsList.map((path, index) => (
-                <Card
-                  key={index}
-                  className="p-5 hover:shadow-card-hover transition-smooth group"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <h4 className="font-bold text-lg text-foreground">{path.name}</h4>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-fast">
-                      <button 
-                        className="p-1 hover:bg-muted rounded"
-                        onClick={() => setEditingPath({ ...path, index })}
-                      >
-                        <Edit className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                      <button 
-                        className="p-1 hover:bg-muted rounded"
-                        onClick={() => {
-                          setDeleteType("path");
-                          setDeletingId(index);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 mb-3 flex-wrap">
-                    {path.stops.map((stop, stopIndex) => (
-                      <div key={stopIndex} className="flex items-center gap-2">
-                        <span className="px-3 py-1.5 bg-muted text-sm font-medium rounded-lg">
-                          {stop}
-                        </span>
-                        {stopIndex < path.stops.length - 1 && (
-                          <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                        )}
+            {pathsList.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No paths available. Create one to get started!
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pathsList.map((path) => (
+                  <Card
+                    key={path.path_id}
+                    className="p-5 hover:shadow-card-hover transition-smooth group"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <h4 className="font-bold text-lg text-foreground">{path.path_name}</h4>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-fast">
+                        <button 
+                          className="p-1 hover:bg-muted rounded"
+                          onClick={() => setEditingPath(path)}
+                        >
+                          <Edit className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                        <button 
+                          className="p-1 hover:bg-muted rounded"
+                          onClick={() => {
+                            setDeleteType("path");
+                            setDeletingId(path.path_id);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </button>
                       </div>
-                    ))}
-                  </div>
+                    </div>
 
-                  <span className="text-sm text-muted-foreground">
-                    Used in {path.routes} route{path.routes !== 1 ? "s" : ""}
-                  </span>
-                </Card>
-              ))}
-            </div>
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      {path.stops.map((pathStop, stopIndex) => {
+                        const stopInfo = stopsList.find(s => s.stop_id === pathStop.stop_id);
+                        return (
+                          <div key={stopIndex} className="flex items-center gap-2">
+                            <span className="px-3 py-1.5 bg-muted text-sm font-medium rounded-lg">
+                              {stopInfo?.name || `Stop ${pathStop.stop_id}`}
+                            </span>
+                            {stopIndex < path.stops.length - 1 && (
+                              <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <span className="text-sm text-muted-foreground">
+                      {path.stops.length} stop{path.stops.length !== 1 ? "s" : ""}
+                    </span>
+                  </Card>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       </div>
@@ -206,20 +345,22 @@ export default function StopsPaths() {
       open={!!editingStop}
       onOpenChange={(open) => !open && setEditingStop(null)}
       onSubmit={handleEditStop}
-      editData={editingStop}
+      editData={editingStop || undefined}
     />
 
     <CreatePathModal
       open={pathModalOpen}
       onOpenChange={setPathModalOpen}
       onSubmit={handleCreatePath}
+      availableStops={stopsList}
     />
 
     <CreatePathModal
       open={!!editingPath}
       onOpenChange={(open) => !open && setEditingPath(null)}
       onSubmit={handleEditPath}
-      editData={editingPath}
+      editData={editingPath || undefined}
+      availableStops={stopsList}
     />
 
     <DeleteConfirmDialog

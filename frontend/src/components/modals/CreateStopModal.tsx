@@ -2,22 +2,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
+import { StopCreate, Stop } from "@/types";
 
 interface CreateStopModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: any) => void;
-  editData?: any;
+  onSubmit: (data: StopCreate) => void;
+  editData?: Stop;
 }
 
 export function CreateStopModal({ open, onOpenChange, onSubmit, editData }: CreateStopModalProps) {
-  const [formData, setFormData] = useState(editData || {
+  const [formData, setFormData] = useState<StopCreate>(editData ? {
+    name: editData.name,
+    latitude: editData.latitude,
+    longitude: editData.longitude
+  } : {
     name: "",
-    lat: "",
-    lng: "",
-    description: ""
+    latitude: 0,
+    longitude: 0
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -46,37 +49,30 @@ export function CreateStopModal({ open, onOpenChange, onSubmit, editData }: Crea
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="lat">Latitude</Label>
+              <Label htmlFor="latitude">Latitude</Label>
               <Input
-                id="lat"
-                value={formData.lat}
-                onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
+                id="latitude"
+                type="number"
+                step="any"
+                value={formData.latitude}
+                onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
                 placeholder="e.g., 12.9352"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="lng">Longitude</Label>
+              <Label htmlFor="longitude">Longitude</Label>
               <Input
-                id="lng"
-                value={formData.lng}
-                onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
+                id="longitude"
+                type="number"
+                step="any"
+                value={formData.longitude}
+                onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
                 placeholder="e.g., 77.5931"
                 required
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Add any notes about this stop..."
-              rows={3}
-            />
           </div>
 
           <DialogFooter>

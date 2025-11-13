@@ -2,44 +2,78 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Plus } from "lucide-react";
+import { PathCreate, PathStop, Stop } from "@/types";
 
 interface CreatePathModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: PathCreate) => void;
   editData?: any;
+  availableStops?: Stop[]; // Pass available stops from parent
 }
 
-const availableStops = ["Gavipuram", "Temple", "Peenya", "BTM", "Hongsandra", "NoShow"];
-
-export function CreatePathModal({ open, onOpenChange, onSubmit, editData }: CreatePathModalProps) {
-  const [formData, setFormData] = useState(editData || {
-    name: "",
-    stops: ["", ""]
+export function CreatePathModal({ open, onOpenChange, onSubmit, editData, availableStops = [] }: CreatePathModalProps) {
+  const [formData, setFormData] = useState<PathCreate>({
+    path_name: "",
+    stops: [
+      { stop_id: 0, stop_order: 1 },
+      { stop_id: 0, stop_order: 2 }
+    ]
   });
+
+  useEffect(() => {
+    if (editData) {
+      setFormData({
+        path_name: editData.path_name || "",
+        stops: editData.stops || [
+          { stop_id: 0, stop_order: 1 },
+          { stop_id: 0, stop_order: 2 }
+        ]
+      });
+    } else {
+      setFormData({
+        path_name: "",
+        stops: [
+          { stop_id: 0, stop_order: 1 },
+          { stop_id: 0, stop_order: 2 }
+        ]
+      });
+    }
+  }, [editData, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    // Filter out any stops with stop_id = 0
+    const validStops = formData.stops.filter(s => s.stop_id > 0);
+    if (validStops.length < 2) {
+      alert("Please select at least 2 stops");
+      return;
+    }
+    onSubmit({ ...formData, stops: validStops });
     onOpenChange(false);
   };
 
   const addStop = () => {
-    setFormData({ ...formData, stops: [...formData.stops, ""] });
+    const newStopOrder = formData.stops.length + 1;
+    setFormData({ 
+      ...formData, 
+      stops: [...formData.stops, { stop_id: 0, stop_order: newStopOrder }] 
+    });
   };
 
   const removeStop = (index: number) => {
     if (formData.stops.length > 2) {
-      const newStops = formData.stops.filter((_: any, i: number) => i !== index);
+      const newStops = formData.stops.filter((_, i) => i !== index)
+        .map((stop, idx) => ({ ...stop, stop_order: idx + 1 }));
       setFormData({ ...formData, stops: newStops });
     }
   };
 
-  const updateStop = (index: number, value: string) => {
+  const updateStopId = (index: number, stopId: number) => {
     const newStops = [...formData.stops];
-    newStops[index] = value;
+    newStops[index] = { ...newStops[index], stop_id: stopId };
     setFormData({ ...formData, stops: newStops });
   };
 
@@ -51,11 +85,11 @@ export function CreatePathModal({ open, onOpenChange, onSubmit, editData }: Crea
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Path Name</Label>
+            <Label htmlFor="path_name">Path Name</Label>
             <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              id="path_name"
+              value={formData.path_name}
+              onChange={(e) => setFormData({ ...formData, path_name: e.target.value })}
               placeholder="e.g., Path1"
               required
             />
@@ -63,18 +97,20 @@ export function CreatePathModal({ open, onOpenChange, onSubmit, editData }: Crea
           
           <div className="space-y-3">
             <Label>Stops (in order)</Label>
-            {formData.stops.map((stop: string, index: number) => (
+            {formData.stops.map((pathStop, index) => (
               <div key={index} className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground w-6">{index + 1}.</span>
+                <span className="text-sm text-muted-foreground w-6">{pathStop.stop_order}.</span>
                 <select
-                  value={stop}
-                  onChange={(e) => updateStop(index, e.target.value)}
+                  value={pathStop.stop_id}
+                  onChange={(e) => updateStopId(index, parseInt(e.target.value))}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   required
                 >
-                  <option value="">Select stop</option>
-                  {availableStops.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                  <option value={0}>Select stop</option>
+                  {availableStops.map((stop) => (
+                    <option key={stop.stop_id} value={stop.stop_id}>
+                      {stop.name}
+                    </option>
                   ))}
                 </select>
                 {formData.stops.length > 2 && (

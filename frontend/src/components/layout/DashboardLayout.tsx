@@ -1,14 +1,18 @@
 import { Sidebar, useSidebarCollapse } from "./Sidebar";
 import { TopNav } from "./TopNav";
-import { MoviAssistant } from "@/components/MoviAssistant";
+import { MoviChat } from "@/components/movi/MoviChat";
+import { MoviFloatingButton } from "@/components/movi/MoviFloatingButton";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  currentPage?: string;
 }
 
-function DashboardContent({ children }: DashboardLayoutProps) {
+function DashboardContent({ children, currentPage = "dashboard" }: DashboardLayoutProps) {
   const { isCollapsed } = useSidebarCollapse();
+  const [moviOpen, setMoviOpen] = useState(false);
   
   return (
     <>
@@ -19,16 +23,22 @@ function DashboardContent({ children }: DashboardLayoutProps) {
       )}>
         {children}
       </main>
-      <MoviAssistant />
+      {/* Movi AI Assistant */}
+      <MoviFloatingButton onClick={() => setMoviOpen(!moviOpen)} />
+      <MoviChat
+        isOpen={moviOpen}
+        onClose={() => setMoviOpen(false)}
+        currentPage={currentPage}
+      />
     </>
   );
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children, currentPage }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <DashboardContent>{children}</DashboardContent>
+      <DashboardContent currentPage={currentPage}>{children}</DashboardContent>
     </div>
   );
 }
