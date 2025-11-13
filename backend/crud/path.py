@@ -3,7 +3,7 @@ CRUD operations for Path model
 """
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from models import Path, PathStop, Stop
+from backend.database.models import Path, PathStop, Stop
 from schemas import PathCreate, PathResponse, PathStopBase
 
 

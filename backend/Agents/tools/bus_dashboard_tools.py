@@ -5,7 +5,7 @@ Tools for managing trips, deployments, vehicles, and drivers
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Vehicle, Driver, DailyTrip, Deployment
+from backend.database.models import Vehicle, Driver, DailyTrip, Deployment
 from langchain_core.tools import tool
 
 

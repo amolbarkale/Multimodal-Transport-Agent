@@ -3,7 +3,7 @@ CRUD operations for Driver model
 """
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from models import Driver
+from backend.database.models import Driver
 from schemas import DriverCreate, DriverResponse
 
 

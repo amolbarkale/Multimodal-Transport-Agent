@@ -4,7 +4,7 @@ Tools for reading and managing stops and paths
 """
 from typing import Dict, Any
 from database import get_db
-from models import Stop, Path, PathStop
+from backend.database.models import Stop, Path, PathStop
 from langchain_core.tools import tool
 
 

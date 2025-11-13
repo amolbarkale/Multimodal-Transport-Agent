@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
-from models import Route, Path, PathStop, Stop
+from backend.database.models import Route, Path, PathStop, Stop
 from schemas import RouteCreate, RouteStatus
 from datetime import time
 from typing import Optional, List

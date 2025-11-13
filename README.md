@@ -37,4 +37,4 @@ graph TD
     D -- Reasons with --> G
     ```
 
-    
+uvicorn main:app --reload

@@ -4,7 +4,7 @@ Tools for reading and managing routes
 """
 from typing import Dict, Any
 from database import get_db
-from models import Route, Path, RouteStatus
+from backend.database.models import Route, Path, RouteStatus
 from langchain_core.tools import tool
 
 

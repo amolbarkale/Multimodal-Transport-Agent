@@ -3,7 +3,7 @@ CRUD operations for Vehicle model
 """
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from models import Vehicle, VehicleType
+from backend.database.models import Vehicle, VehicleType
 from schemas import VehicleCreate, VehicleResponse
 
 

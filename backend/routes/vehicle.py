@@ -4,7 +4,7 @@ from typing import List
 from database import get_db
 from crud import vehicle
 from schemas import VehicleCreate, VehicleResponse
-from models import VehicleType
+from backend.database.models import VehicleType
 
 router = APIRouter(prefix="/vehicles", tags=["vehicles"])
 

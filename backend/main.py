@@ -1,41 +1,69 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-from models import Base
-from database import engine
-from routes.vehicle import router as vehicle_router
-from routes.driver import router as driver_router
-from routes.stop import router as stop_router
-from routes.path import router as path_router
-from routes.route import router as route_router
-from routes.daily_trip import router as daily_trip_router
-from routes.deployment import router as deployment_router
-from routes.movi import router as movi_router
+from pydantic import BaseModel
+from typing import List, Optional
 
-# Load environment variables
-load_dotenv()
+from agent.graph import create_movi_agent_graph
+from langchain_core.messages import HumanMessage, AIMessage
 
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="Move In Sync API", version="1.0.0")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # In production, restrict this to frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(vehicle_router)
-app.include_router(driver_router)
-app.include_router(stop_router)
-app.include_router(path_router)
-app.include_router(route_router)
-app.include_router(daily_trip_router)
-app.include_router(deployment_router)
-app.include_router(movi_router)
+# --- Pydantic Models for API ---
+# These models define the expected request and response structure.
+class Message(BaseModel):
+    role: str
+    content: str
+
+class AgentRequest(BaseModel):
+    messages: List[Message]
+    currentPage: Optional[str] = "unknown"
+
+# --- Agent Initialization ---
+# We create a single, reusable instance of our agent graph.
+movi_agent = create_movi_agent_graph()
+
+# --- API Endpoint ---
+@app.post("/invoke_agent")
+async def invoke_agent(request: AgentRequest):
+    """
+    The single endpoint to interact with the Movi agent.
+    It receives the conversation history and current page context from the frontend.
+    """
+    # Convert the generic messages from the frontend into LangChain's message format.
+    langchain_messages = []
+    for msg in request.messages:
+        if msg.role == "user":
+            langchain_messages.append(HumanMessage(content=msg.content))
+        elif msg.role == "assistant":
+            langchain_messages.append(AIMessage(content=msg.content))
+
+    # The input for our graph must match the AgentState structure.
+    inputs = {
+        "messages": langchain_messages,
+        "currentPage": request.currentPage,
+    }
+
+    # Invoke the graph to get the final state.
+    final_state = movi_agent.invoke(inputs)
+
+    # The final response is the last message added by the AI.
+    ai_response = final_state['messages'][-1]
+
+    return {"role": "assistant", "content": ai_response.content}
+
+
+@app.get("/")
+def read_root():
+    return {"message": "Movi Agent Backend is running."}
 
 @app.get("/health")
-def health_check():
-    return {"status": "healthy"}
+def read_root():
+    return {"message": "Movi Agent server is healthy."}

@@ -3,7 +3,7 @@ CRUD operations for Stop model
 """
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from models import Stop
+from backend.database.models import Stop
 from schemas import StopCreate, StopResponse
 
 

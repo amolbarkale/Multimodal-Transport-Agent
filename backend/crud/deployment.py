@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
-from models import Deployment, DailyTrip, Vehicle, Driver
+from backend.database.models import Deployment, DailyTrip, Vehicle, Driver
 from schemas import DeploymentCreate
 from typing import Optional, List
 

@@ -1,6 +1,12 @@
-langgraph>=1.0.0
-langchain-openai>=1.0.0
-langchain-core>=1.0.0
-python-dotenv>=1.0.0
-requests>=2.32.0
+# langgraph>=1.0.0
+# langchain-openai>=1.0.0
+# langchain-core>=1.0.0
+# python-dotenv>=1.0.0
+# requests>=2.32.0
 
+fastapi[all]
+sqlalchemy
+python-dotenv
+langchain
+langchain-openai
+langgraph
