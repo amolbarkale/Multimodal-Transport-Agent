@@ -55,3 +55,12 @@ class DailyTrip(BaseModel):
 
     class Config:
         from_attributes = True
+
+class RouteCreate(BaseModel):
+    path_id: int
+    route_display_name: str
+    shift_time: str
+    direction: str
+    capacity: int
+    allocated_waitlist: int
+    status: str

@@ -10,7 +10,8 @@ from .tools import (
     check_trip_consequences, list_stops_for_path, find_routes_for_path,
     assign_vehicle_to_trip, create_new_stop, create_new_path,
     update_route_status, get_deployment_details, create_new_trip,
-    check_route_deactivation_consequences
+    check_route_deactivation_consequences,
+    get_all_trips
 )
 
 load_dotenv()
@@ -19,7 +20,8 @@ tools = [
     get_unassigned_vehicles, get_trip_status, remove_vehicle_from_trip,
     list_stops_for_path, find_routes_for_path, assign_vehicle_to_trip,
     create_new_stop, create_new_path, update_route_status, get_deployment_details,
-    create_new_trip
+    create_new_trip,
+    get_all_trips
 ]
 tool_node = ToolNode(tools)
 

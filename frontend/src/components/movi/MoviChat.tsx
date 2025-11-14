@@ -1,12 +1,11 @@
 import { useRef, useEffect, useState } from "react";
-import { X, Send, Loader2, Bot, Paperclip, XCircle, Mic, MicOff } from "lucide-react";
+import { X, Send, Loader2, Bot, Paperclip, XCircle, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useMoviAgent } from "@/hooks/useMoviAgent";
 import { cn } from "@/lib/utils";
 
-// --- TYPE DEFINITIONS for Web Speech API ---
 // This tells TypeScript what the SpeechRecognition object looks like.
 interface ISpeechRecognition extends EventTarget {
   continuous: boolean;
@@ -29,18 +28,16 @@ interface MoviChatProps {
 }
 
 export function MoviChat({ isOpen, onClose, currentPage }: MoviChatProps) {
-  const { messages, isLoading, sendMessage } = useMoviAgent([
-    {
-      role: "assistant",
-      content: "👋 Hi! I'm Movi. You can now upload images for context. How can I help?",
-    },
-  ]);
+  const [isTtsEnabled, setIsTtsEnabled] = useState(true);
+  const { messages, isLoading, sendMessage } = useMoviAgent(
+    [{ role: "assistant", content: "👋 Hi! I'm Movi. How can I help?" }],
+    isTtsEnabled
+  );
   
   const [input, setInput] = useState("");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   
-  // The ref will now hold our strongly-typed recognition instance.
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -120,13 +117,24 @@ export function MoviChat({ isOpen, onClose, currentPage }: MoviChatProps) {
     <div className="fixed bottom-4 right-4 z-50">
       <Card className="w-96 h-[600px] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground">
+        {/* <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground">
             <div className="flex items-center gap-2">
                 <Bot className="w-6 h-6" />
                 <div><h3 className="font-semibold">Movi</h3><p className="text-xs opacity-90 capitalize">Context: {currentPage.replace(/([A-Z])/g, ' $1').trim()}</p></div>
             </div>
+             <Button variant="ghost" size="icon" onClick={() => setIsTtsEnabled(!isTtsEnabled)} className="hover:bg-primary-dark text-primary-foreground">
+                    {isTtsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                </Button>
             <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-primary-dark text-primary-foreground"><X className="w-5 h-5" /></Button>
-        </div>
+        </div> */}
+        <div className="flex items-center">
+                <Button variant="ghost" size="icon" onClick={() => setIsTtsEnabled(!isTtsEnabled)} className="hover:bg-primary-dark text-primary-foreground">
+                    {isTtsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-primary-dark text-primary-foreground">
+                    <X className="w-5 h-5" />
+                </Button>
+            </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">

@@ -142,6 +142,13 @@ def create_new_path(path_name: str, stop_names: List[str]) -> str:
     if len(stop_names) < 2:
         return "Error: A path requires at least two stops."
     db: Session = SessionLocal()
+
+    existing_path = db.query(Path).filter(Path.name == path_name).first()
+    if existing_path:
+        db.close()
+        # Return a helpful error message to the agent's brain (the LLM)
+        return f"Error: A path with the name '{path_name}' already exists. Please use the existing path or choose a different name."
+
     stops = db.query(Stop).filter(Stop.name.in_(stop_names)).all()
     stop_map = {stop.name: stop.stop_id for stop in stops}
     if len(stops) != len(stop_names):
@@ -234,3 +241,16 @@ def create_new_trip(route_display_name: str, trip_display_name: str, live_status
     db.commit()
     db.close()
     return f"Successfully created new trip '{trip_display_name}' for route '{route_display_name}' with status '{live_status}'."
+
+@tool
+def get_all_trips() -> str:
+    """Returns a list of all display names for today's trips."""
+    db: Session = SessionLocal()
+    trips = db.query(DailyTrip).all()
+    if not trips:
+        db.close()
+        return "There are no trips scheduled for today."
+    
+    trip_names = [trip.display_name for trip in trips]
+    db.close()
+    return f"Found {len(trip_names)} trips today: {', '.join(trip_names)}"

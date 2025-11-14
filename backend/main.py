@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -122,3 +122,57 @@ def get_trip_route_stops(trip_id: int, db: Session = Depends(get_db)):
     
     return ordered_stops
     
+
+@app.get("/paths", response_model=List[schemas.Path])
+def get_all_paths(db: Session = Depends(get_db)):
+    """Fetches all paths for the 'Create Route' modal dropdown."""
+    return db.query(models.Path).all()
+
+@app.get("/routes", response_model=List[schemas.Route])
+def get_all_routes_by_status(status: str = "active", db: Session = Depends(get_db)):
+    """Fetches all routes, filtered by 'active' or 'deactivated' status."""
+    return db.query(models.Route).filter(models.Route.status == status).all()
+
+@app.post("/routes", response_model=schemas.Route)
+def create_route(route: schemas.RouteCreate, db: Session = Depends(get_db)):
+    """Creates a new route."""
+    path = db.query(models.Path).filter(models.Path.path_id == route.path_id).first()
+    if not path:
+        raise HTTPException(status_code=404, detail="Path not found")
+    
+    stops = db.query(models.Stop).filter(models.Stop.stop_id.in_([int(s) for s in path.ordered_stop_ids.split(',')])).all()
+    stop_map = {s.stop_id: s for s in stops}
+    ordered_ids = [int(s) for s in path.ordered_stop_ids.split(',')]
+    start_point = stop_map[ordered_ids[0]].name
+    end_point = stop_map[ordered_ids[-1]].name
+
+    new_route = models.Route(
+        **route.model_dump(),
+        start_point=start_point,
+        end_point=end_point
+    )
+    db.add(new_route)
+    db.commit()
+    db.refresh(new_route)
+    return new_route
+
+@app.patch("/routes/{route_id}/status", response_model=schemas.Route)
+def update_route_status(route_id: int, status: str, db: Session = Depends(get_db)):
+    """Updates a route's status to active or deactivated."""
+    route = db.query(models.Route).filter(models.Route.route_id == route_id).first()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+    route.status = status
+    db.commit()
+    db.refresh(route)
+    return route
+
+@app.delete("/routes/{route_id}", status_code=204)
+def delete_route(route_id: int, db: Session = Depends(get_db)):
+    """Deletes a route."""
+    route = db.query(models.Route).filter(models.Route.route_id == route_id).first()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+    db.delete(route)
+    db.commit()
+    return {"ok": True}
