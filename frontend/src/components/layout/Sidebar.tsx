@@ -1,4 +1,4 @@
-import { Bus, MapIcon, MapPin, Car, UserCircle, BarChart3, Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bus, MapIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
 import { createContext, useContext, useState } from "react";
@@ -6,11 +6,6 @@ import { createContext, useContext, useState } from "react";
 const menuItems = [
   { icon: Bus, label: "Bus Dashboard", path: "/dashboard/buses" },
   { icon: MapIcon, label: "Manage Routes", path: "/dashboard/routes" },
-  { icon: MapPin, label: "Stops & Paths", path: "/dashboard/stops-paths" },
-  { icon: Car, label: "Vehicles", path: "/dashboard/vehicles" },
-  { icon: UserCircle, label: "Drivers", path: "/dashboard/drivers" },
-  { icon: BarChart3, label: "Analytics", path: "/dashboard/analytics" },
-  { icon: Settings, label: "Settings", path: "/dashboard/settings" },
 ];
 
 // Create context for sidebar state

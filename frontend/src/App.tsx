@@ -15,9 +15,6 @@ import BusDashboard from "./pages/dashboard/BusDashboard";
 import ManageRoutes from "./pages/dashboard/ManageRoutes";
 import StopsPaths from "./pages/dashboard/StopsPaths";
 import Vehicles from "./pages/dashboard/Vehicles";
-import Drivers from "./pages/dashboard/Drivers";
-import Analytics from "./pages/dashboard/Analytics";
-import Settings from "./pages/dashboard/Settings";
 
 const queryClient = new QueryClient();
 
@@ -40,11 +37,6 @@ const App = () => (
           <Route path="/dashboard" element={<Navigate to="/dashboard/buses" replace />} />
           <Route path="/dashboard/buses" element={<BusDashboard />} />
           <Route path="/dashboard/routes" element={<ManageRoutes />} />
-          <Route path="/dashboard/stops-paths" element={<StopsPaths />} />
-          <Route path="/dashboard/vehicles" element={<Vehicles />} />
-          <Route path="/dashboard/drivers" element={<Drivers />} />
-          <Route path="/dashboard/analytics" element={<Analytics />} />
-          <Route path="/dashboard/settings" element={<Settings />} />
           
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

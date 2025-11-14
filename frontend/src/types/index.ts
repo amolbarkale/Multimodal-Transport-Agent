@@ -41,12 +41,12 @@ export interface PathCreate {
   stops: PathStop[];
 }
 
-// Route types
+
 export interface Route {
   route_id: number;
   path_id: number;
-  route_display_name: string;
-  shift_time: string; // "HH:MM:SS" format
+  display_name: string;
+  shift_time: string;
   direction: string;
   start_point: string;
   end_point: string;
@@ -134,4 +134,21 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   image?: string | null; // This line is crucial
+}
+
+export interface PathStop {
+  stop_id: number;
+  stop_order: number;
+}
+
+export interface Path {
+  path_id: number;
+  path_name: string;
+  ordered_stop_ids: string;
+  stops: PathStop[];
+}
+
+export interface PathCreate {
+  path_name: string;
+  stops: PathStop[];
 }
