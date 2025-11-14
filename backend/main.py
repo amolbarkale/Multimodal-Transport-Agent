@@ -38,28 +38,42 @@ movi_agent = create_movi_agent_graph()
 @app.post("/invoke_agent")
 async def invoke_agent(request: AgentRequest):
     """
-    The single endpoint to interact with the Movi agent.
-    It receives the conversation history and current page context from the frontend.
+    Handles agent interactions. Now correctly constructs a multimodal message
+    if an image is provided.
     """
-    # Convert the generic messages from the frontend into LangChain's message format.
+    # 1. Convert message history from frontend format to LangChain format
     langchain_messages = []
     for msg in request.messages:
         if msg.role == "user":
             langchain_messages.append(HumanMessage(content=msg.content))
         elif msg.role == "assistant":
             langchain_messages.append(AIMessage(content=msg.content))
+            
+    # --- THIS IS THE CRITICAL FIX ---
+    # 2. If an image is present, create a proper multimodal message
+    if request.image:
+        print("--- constructing multimodal message ---")
+        # The user's text and image belong to the SAME message turn.
+        # We find the last user message text to combine it with the image.
+        last_user_text = ""
+        if langchain_messages and isinstance(langchain_messages[-1], HumanMessage):
+             last_user_text = langchain_messages[-1].content
+             # Remove the now-redundant text-only message
+             langchain_messages = langchain_messages[:-1]
 
-    # The input for our graph must match the AgentState structure.
-    inputs = {
-        "messages": langchain_messages,
-        "currentPage": request.currentPage,
-        "image": request.image,
-    }
+        # Construct the multimodal content list
+        multimodal_content = [
+            {"type": "text", "text": last_user_text},
+            {"type": "image_url", "image_url": {"url": request.image}}
+        ]
+        
+        # Append a single, new HumanMessage containing both text and image
+        langchain_messages.append(HumanMessage(content=multimodal_content))
 
-    # Invoke the graph to get the final state.
+    # 3. The agent's input is now just a clean list of messages
+    inputs = {"messages": langchain_messages}
+
     final_state = movi_agent.invoke(inputs)
-
-    # The final response is the last message added by the AI.
     ai_response = final_state['messages'][-1]
 
     return {"role": "assistant", "content": ai_response.content}
