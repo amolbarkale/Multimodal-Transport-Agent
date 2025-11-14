@@ -21,7 +21,7 @@ Movi is a true multimodal assistant that understands text, voice, and images. It
 
 The Movi system is designed as a modern full-stack application with a clear separation of concerns between the frontend, backend agent, and database.
 
-![System Architecture Diagram](./assets/system-architecture.png)
+![System Architecture Diagram](./frontend/public/system-architecture.png)
 
 ---
 
@@ -33,7 +33,7 @@ The core intelligence of Movi is its agent, which is implemented as a state mach
 
 This diagram visualizes the agent's decision-making process, highlighting the critical "Tribal Knowledge" flow.
 
-![LangGraph Agent Flow Diagram](./assets/langgraph-flow.png)
+![LangGraph Agent Flow Diagram](./frontend/public/langgraph-flow.png)
 
 ### Explanation of the Graph
 
