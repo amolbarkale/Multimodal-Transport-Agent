@@ -34,7 +34,6 @@ class AgentState(TypedDict):
     tool_calls: Optional[list] = None
     consequence_info: Optional[str] = None
 
-# --- SIMPLIFIED CALL MODEL NODE ---
 def call_model(state: AgentState):
     """
     The primary node that calls the LLM. It's now much simpler because the
@@ -43,7 +42,7 @@ def call_model(state: AgentState):
     print("---CALLING MODEL---")
     
     system_prompt = (
-        "You are 'Movi', an AI assistant for transport managers... " # (Keeping your existing detailed prompt)
+        "You are 'Movi', an AI assistant for transport managers... "
         "CRITICAL INSTRUCTION: When identifying entities..., you MUST use the exact, full name... "
         "ADDITIONAL INSTRUCTION: If an image is provided with a message, it is the primary context. "
         "Use the visual information in the image to identify what the user is referring to."
@@ -58,7 +57,6 @@ def call_model(state: AgentState):
     
     return {"messages": [response], "tool_calls": response.tool_calls}
 
-# ... (The rest of the file: check_consequences, should_continue, after_consequence_check, and the graph assembly remain IDENTICAL) ...
 
 def check_consequences(state: AgentState):
     print("---CHECKING CONSEQUENCES---")

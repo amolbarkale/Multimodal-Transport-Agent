@@ -13,8 +13,6 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 // Dashboard Pages
 import BusDashboard from "./pages/dashboard/BusDashboard";
 import ManageRoutes from "./pages/dashboard/ManageRoutes";
-import StopsPaths from "./pages/dashboard/StopsPaths";
-import Vehicles from "./pages/dashboard/Vehicles";
 
 const queryClient = new QueryClient();
 

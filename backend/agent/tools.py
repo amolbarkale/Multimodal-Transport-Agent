@@ -146,7 +146,6 @@ def create_new_path(path_name: str, stop_names: List[str]) -> str:
     existing_path = db.query(Path).filter(Path.name == path_name).first()
     if existing_path:
         db.close()
-        # Return a helpful error message to the agent's brain (the LLM)
         return f"Error: A path with the name '{path_name}' already exists. Please use the existing path or choose a different name."
 
     stops = db.query(Stop).filter(Stop.name.in_(stop_names)).all()
@@ -187,7 +186,7 @@ def get_deployment_details(trip_display_name: str) -> str:
     if not trip:
         db.close()
         return f"Trip '{trip_display_name}' not found."
-    deployment = db.query(Deployment).filter(Deployment.trip_id == trip.trip_id).first() # CORRECTED
+    deployment = db.query(Deployment).filter(Deployment.trip_id == trip.trip_id).first()
     if not deployment:
         db.close()
         return f"No vehicle is currently deployed for the trip '{trip_display_name}'."
@@ -205,7 +204,7 @@ def check_route_deactivation_consequences(route_display_name: str, db: Session) 
     if not route:
         return {"has_consequences": False, "details": "Route not found."}
     active_trips = db.query(DailyTrip).filter(
-        DailyTrip.route_id == route.route_id, # CORRECTED
+        DailyTrip.route_id == route.route_id, 
         DailyTrip.live_status.in_(['scheduled', 'in_progress'])
     ).all()
     if not active_trips:
@@ -232,7 +231,7 @@ def create_new_trip(route_display_name: str, trip_display_name: str, live_status
         db.close()
         return f"Error: A trip named '{trip_display_name}' already exists for today."
     new_trip = DailyTrip(
-        route_id=route.route_id, # CORRECTED
+        route_id=route.route_id,
         display_name=trip_display_name,
         live_status=live_status,
         booking_status_percentage=0
