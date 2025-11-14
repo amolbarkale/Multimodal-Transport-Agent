@@ -21,37 +21,7 @@ Movi is a true multimodal assistant that understands text, voice, and images. It
 
 The Movi system is designed as a modern full-stack application with a clear separation of concerns between the frontend, backend agent, and database.
 
-```mermaid
-graph TD
-    subgraph Browser
-        A[React Frontend <br> (TypeScript, Vite)]
-        B[Web Speech API <br> (for STT/TTS)]
-    end
-
-    subgraph "Backend Server (Python)"
-        C[API Gateway <br> (FastAPI)]
-        D{Movi Agent Core <br> (LangGraph)}
-        E[Agent Tools <br> (Database Functions)]
-        F[Database ORM <br> (SQLAlchemy)]
-    end
-
-    subgraph "External Services"
-        G[Multimodal LLM <br> (OpenAI GPT-4o)]
-    end
-
-    subgraph "Data Store"
-        H[Database <br> (SQLite)]
-    end
-
-    A -- "HTTP/WebSocket Request (Text, Image, Context)" --> C;
-    B -- "Voice Input" --> A;
-    A -- "Text/Audio Output" --> B;
-    C -- "Invokes Agent" --> D;
-    D -- "Executes Tools" --> E;
-    E -- "DB Operations" --> F;
-    F -- "CRUD" --> H;
-    D -- "Reasons With" --> G;
-```
+![System Architecture Diagram](./assets/system-architecture.png)
 
 ---
 
@@ -63,30 +33,7 @@ The core intelligence of Movi is its agent, which is implemented as a state mach
 
 This diagram visualizes the agent's decision-making process, highlighting the critical "Tribal Knowledge" flow.
 
-```mermaid
-graph TD
-    A[User Input <br> (Text, Voice, or Image)] --> B(Movi Agent Core <br> call_model);
-    B --> C{Initial Routing Logic <br> should_continue};
-    
-    C -->|No Tool Needed| H[Generate Final Response];
-    C -->|Safe Tool Call| D[Execute Tool <br> tool_node];
-    C -->|<b>High-Impact Tool Call</b>| E[<b style='color:red'>Check for Consequences</b> <br> check_consequences];
-    
-    D --> B;
-    E --> F{Consequences Found? <br> after_consequence_check};
-    F -->|<b>No, Safe to Proceed</b>| D;
-    F -->|<b>Yes, Consequences Exist</b>| G[<b style='color:red'>Formulate Warning & Ask for Confirmation</b>];
-    
-    G --> Z([END: Wait for User's 'Yes/No']);
-    H --> Z([END]);
-    subgraph "Tribal Knowledge Flow"
-        E
-        F
-        G
-    end
-    style E fill:#f9f,stroke:#333,stroke-width:2px
-    style G fill:#f9f,stroke:#333,stroke-width:2px
-```
+![LangGraph Agent Flow Diagram](./assets/langgraph-flow.png)
 
 ### Explanation of the Graph
 
