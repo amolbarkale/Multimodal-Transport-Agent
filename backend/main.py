@@ -176,3 +176,19 @@ def delete_route(route_id: int, db: Session = Depends(get_db)):
     db.delete(route)
     db.commit()
     return {"ok": True}
+
+@app.get("/vehicles", response_model=List[schemas.Vehicle])
+def get_all_vehicles(db: Session = Depends(get_db)):
+    return db.query(models.Vehicle).all()
+
+@app.get("/drivers", response_model=List[schemas.Driver])
+def get_all_drivers(db: Session = Depends(get_db)):
+    return db.query(models.Driver).all()
+
+@app.get("/stops", response_model=List[schemas.Stop])
+def get_all_stops(db: Session = Depends(get_db)):
+    return db.query(models.Stop).all()
+
+@app.get("/paths", response_model=List[schemas.Path])
+def get_all_paths(db: Session = Depends(get_db)):
+    return db.query(models.Path).all()

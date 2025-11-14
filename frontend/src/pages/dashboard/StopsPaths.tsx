@@ -35,7 +35,7 @@ export default function StopsPaths() {
   const fetchStops = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/stops/all`);
+      const response = await fetch(`${API_URL}/stops`);
       if (!response.ok) throw new Error("Failed to fetch stops");
       const data = await response.json();
       setStopsList(data);
@@ -52,7 +52,7 @@ export default function StopsPaths() {
 
   const fetchPaths = async () => {
     try {
-      const response = await fetch(`${API_URL}/paths/all`);
+      const response = await fetch(`${API_URL}/paths`);
       if (!response.ok) throw new Error("Failed to fetch paths");
       const data = await response.json();
       setPathsList(data);
@@ -195,7 +195,7 @@ export default function StopsPaths() {
 
   return (
     <>
-    <DashboardLayout currentPage="stopsPaths">
+    <DashboardLayout>
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground mb-2">Stops & Paths</h1>
         <p className="text-muted-foreground">Manage stop locations and path configurations</p>

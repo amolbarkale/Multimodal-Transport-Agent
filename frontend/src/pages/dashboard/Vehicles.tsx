@@ -25,7 +25,7 @@ export default function Vehicles() {
   const fetchVehicles = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/vehicles/all`);
+      const response = await fetch(`${API_URL}/vehicles`);
       if (!response.ok) throw new Error("Failed to fetch vehicles");
       const data = await response.json();
       setVehicles(data);

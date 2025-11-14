@@ -24,7 +24,7 @@ export default function Drivers() {
   const fetchDrivers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/drivers/all`);
+      const response = await fetch(`${API_URL}/drivers`);
       if (!response.ok) throw new Error("Failed to fetch drivers");
       const data = await response.json();
       setDrivers(data);
